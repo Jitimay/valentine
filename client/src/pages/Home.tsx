@@ -258,12 +258,19 @@ const injectTerminalStyles = () => {
         letter-spacing: 0.05em;
         color: var(--neon-magenta);
       }
-      .confetti {
+      .explosion {
         position: fixed;
-        top: 50%;
-        left: 50%;
         pointer-events: none;
-        z-index: 100;
+        z-index: 1000;
+      }
+      .explosion-particle {
+        position: absolute;
+        font-size: 2rem;
+        animation: explode 1s ease-out forwards;
+      }
+      @keyframes explode {
+        0% { transform: scale(1) rotate(0deg); opacity: 1; }
+        100% { transform: scale(0) rotate(360deg) translate(200px, -200px); opacity: 0; }
       }
       .confetti-piece {
         position: absolute;
@@ -331,6 +338,8 @@ export default function Home() {
   const [response, setResponse] = useState<'yes' | 'no' | null>(null);
   const [noButtonVisible, setNoButtonVisible] = useState(true);
   const [noButtonPosition, setNoButtonPosition] = useState({ x: 0, y: 0 });
+  const [showExplosion, setShowExplosion] = useState(false);
+  const [explosionPosition, setExplosionPosition] = useState({ x: 0, y: 0 });
   
   // Inject styles on component mount
   useLayoutEffect(() => {
@@ -411,7 +420,24 @@ export default function Home() {
   };
 
   const handleNo = () => {
-    setResponse('no');
+    // Get button position for explosion
+    const button = document.querySelector('.no-button');
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      setExplosionPosition({ 
+        x: rect.left + rect.width / 2, 
+        y: rect.top + rect.height / 2 
+      });
+    }
+    
+    // Trigger explosion
+    setShowExplosion(true);
+    setNoButtonVisible(false);
+    
+    // Hide explosion after animation
+    setTimeout(() => {
+      setShowExplosion(false);
+    }, 1000);
   };
 
   const handleNoMouseEnter = () => {
@@ -449,6 +475,34 @@ export default function Home() {
           </div>
         ))}
       </div>
+
+      {/* Explosion effect */}
+      {showExplosion && (
+        <div 
+          className="explosion" 
+          style={{ 
+            left: explosionPosition.x, 
+            top: explosionPosition.y 
+          }}
+        >
+          {Array.from({ length: 12 }).map((_, i) => (
+            <motion.span
+              key={i}
+              className="explosion-particle"
+              animate={{
+                x: Math.cos(i * 30 * Math.PI / 180) * 150,
+                y: Math.sin(i * 30 * Math.PI / 180) * 150,
+                rotate: 360,
+                scale: [1, 0],
+                opacity: [1, 0]
+              }}
+              transition={{ duration: 1, ease: 'easeOut' }}
+            >
+              💥
+            </motion.span>
+          ))}
+        </div>
+      )}
 
       {/* Main terminal content */}
       <div className="terminal-content">
@@ -553,6 +607,12 @@ export default function Home() {
                         <span className="magenta-text">{'>'}  </span> NO
                       </Button>
                     </motion.div>
+                  )}
+                  {!noButtonVisible && (
+                    <div className="celebration-text">
+                      <span className="cyan-text">&gt;</span>
+                      <span> Smart choice! Only "YES" remains...</span>
+                    </div>
                   )}
                 </div>
               )}
